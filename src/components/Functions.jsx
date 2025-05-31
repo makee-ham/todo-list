@@ -5,7 +5,7 @@ import Clock from "./Clock";
 import Weather from "./Weather";
 
 export default function Functions() {
-  const [activeTab, setActiveTab] = useState("stopwatch");
+  const [activeTab, setActiveTab] = useState("clock");
 
   const handleTabClick = (tabId) => setActiveTab(tabId);
 

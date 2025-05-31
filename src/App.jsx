@@ -14,6 +14,12 @@ const todoReducer = (state, action) => {
           ? { ...todo, text: action.payload.text }
           : todo
       );
+    case "DONE_TODO":
+      return state.map((todo) =>
+        todo.id === action.payload
+          ? { ...todo, completed: !todo.completed }
+          : todo
+      );
     case "DELETE_TODO":
       return state.filter((todo) => todo.id !== action.payload);
     default:
@@ -27,6 +33,7 @@ function App() {
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [filterButtonStatus, setFilterButtonStatus] = useState("all");
 
   // 추가 관련
   const addTodo = (text) => {
@@ -70,10 +77,22 @@ function App() {
     return () => window.removeEventListener("keydown", escapeModalOff);
   }, [isEdit]);
 
+  // 할 일 완료 여부 관련
+  const doneTodo = (id) => {
+    dispatch({ type: "DONE_TODO", payload: id });
+  };
+
   // 삭제 관련
   const deleteTodo = (id) => {
     dispatch({ type: "DELETE_TODO", payload: id });
   };
+
+  // 완료 여부에 따른 필터된 투두
+  const filteredTodos = todos.filter((todo) => {
+    if (filterButtonStatus === "uncompleted") return !todo.completed;
+    if (filterButtonStatus === "completed") return todo.completed;
+    return true;
+  });
 
   return (
     <>
@@ -84,9 +103,25 @@ function App() {
         <main>
           <Functions />
           <section id="todo-container">
+            <div id="todo-filter">
+              <button onClick={() => setFilterButtonStatus("all")}>
+                모두 보기
+              </button>
+              <button onClick={() => setFilterButtonStatus("uncompleted")}>
+                미완료 항목
+              </button>
+              <button onClick={() => setFilterButtonStatus("completed")}>
+                완료한 항목
+              </button>
+            </div>
             <ul id="todo-list">
-              {todos.map((todo) => (
+              {filteredTodos.map((todo) => (
                 <li key={todo.id}>
+                  <input
+                    type="checkbox"
+                    checked={todo.completed}
+                    onChange={() => doneTodo(todo.id)}
+                  />
                   {todo.text}
                   <button onClick={() => startEditMode(todo.id, todo.text)}>
                     수정
