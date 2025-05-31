@@ -31,15 +31,18 @@ export default function Functions() {
         ))}
       </div>
       <div id="feature-area">
-        {activeTab === "clock" ? (
+        <div style={{ display: activeTab === "clock" ? "block" : "none" }}>
           <Clock />
-        ) : activeTab === "timer" ? (
+        </div>
+        <div style={{ display: activeTab === "timer" ? "block" : "none" }}>
           <Timer />
-        ) : activeTab === "stopwatch" ? (
+        </div>
+        <div style={{ display: activeTab === "stopwatch" ? "block" : "none" }}>
           <Stopwatch />
-        ) : (
+        </div>
+        <div style={{ display: activeTab === "weather" ? "block" : "none" }}>
           <Weather />
-        )}
+        </div>
       </div>
     </section>
   );
