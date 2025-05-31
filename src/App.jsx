@@ -1,4 +1,5 @@
 import { useEffect, useReducer, useState } from "react";
+import Functions from "./components/Functions";
 
 const todoReducer = (state, action) => {
   switch (action.type) {
@@ -81,7 +82,7 @@ function App() {
           <h1>Things Todo</h1>
         </header>
         <main>
-          <section id="functions-container"></section>
+          <Functions />
           <section id="todo-container">
             <ul id="todo-list">
               {todos.map((todo) => (
