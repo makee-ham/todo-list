@@ -1,5 +1,6 @@
 import { useEffect, useReducer, useState } from "react";
 import Functions from "./components/Functions";
+import { getRegExp } from "korean-regexp";
 
 const todoReducer = (state, action) => {
   switch (action.type) {
@@ -33,10 +34,11 @@ function App() {
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [search, setSearch] = useState("");
   const [filterButtonStatus, setFilterButtonStatus] = useState("all");
 
   // 추가 관련
-  const addTodo = (text) => {
+  const handleAddTodo = (text) => {
     if (text.trim() === "") {
       alert("할 일 내용을 입력 후 추가해 주세요.");
       return;
@@ -45,7 +47,7 @@ function App() {
   };
 
   // 수정 관련
-  const editTodo = (id, text) => {
+  const handleEditTodo = (id, text) => {
     if (text.trim() === "") {
       alert("할 일 내용을 입력 후 수정해 주세요.");
       return;
@@ -78,21 +80,28 @@ function App() {
   }, [isEdit]);
 
   // 할 일 완료 여부 관련
-  const doneTodo = (id) => {
+  const handleDoneTodo = (id) => {
     dispatch({ type: "DONE_TODO", payload: id });
   };
 
   // 삭제 관련
-  const deleteTodo = (id) => {
+  const handleDeleteTodo = (id) => {
     dispatch({ type: "DELETE_TODO", payload: id });
   };
 
-  // 완료 여부에 따른 필터된 투두
-  const filteredTodos = todos.filter((todo) => {
-    if (filterButtonStatus === "uncompleted") return !todo.completed;
-    if (filterButtonStatus === "completed") return todo.completed;
-    return true;
-  });
+  // 버튼+검색 필터
+  const filteredTodos = todos
+    .filter((todo) => {
+      // 완료 여부 버튼 필터
+      if (filterButtonStatus === "uncompleted") return !todo.completed;
+      if (filterButtonStatus === "completed") return todo.completed;
+      return true;
+      // 투두 검색 필터
+    })
+    .filter((todo) => {
+      const searchedValue = getRegExp(search);
+      return todo.text.match(searchedValue);
+    });
 
   return (
     <>
@@ -103,16 +112,26 @@ function App() {
         <main>
           <Functions />
           <section id="todo-container">
-            <div id="todo-filter">
-              <button onClick={() => setFilterButtonStatus("all")}>
-                모두 보기
-              </button>
-              <button onClick={() => setFilterButtonStatus("uncompleted")}>
-                미완료 항목
-              </button>
-              <button onClick={() => setFilterButtonStatus("completed")}>
-                완료한 항목
-              </button>
+            <div id="todo-filter-container">
+              <div id="search-filter">
+                <input
+                  type="text"
+                  placeholder="검색어를 입력해주세요"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div id="button-filter">
+                <button onClick={() => setFilterButtonStatus("all")}>
+                  모두 보기
+                </button>
+                <button onClick={() => setFilterButtonStatus("uncompleted")}>
+                  미완료 항목
+                </button>
+                <button onClick={() => setFilterButtonStatus("completed")}>
+                  완료한 항목
+                </button>
+              </div>
             </div>
             <ul id="todo-list">
               {filteredTodos.map((todo) => (
@@ -120,13 +139,15 @@ function App() {
                   <input
                     type="checkbox"
                     checked={todo.completed}
-                    onChange={() => doneTodo(todo.id)}
+                    onChange={() => handleDoneTodo(todo.id)}
                   />
                   {todo.text}
                   <button onClick={() => startEditMode(todo.id, todo.text)}>
                     수정
                   </button>
-                  <button onClick={() => deleteTodo(todo.id)}>삭제</button>
+                  <button onClick={() => handleDeleteTodo(todo.id)}>
+                    삭제
+                  </button>
                 </li>
               ))}
             </ul>
@@ -134,13 +155,13 @@ function App() {
               id="add-todo"
               onSubmit={(e) => {
                 e.preventDefault(); // form 제출 기본 동작인 새로고침 방지
-                addTodo(newTodo);
+                handleAddTodo(newTodo);
                 setNewTodo("");
               }}
             >
               <input
                 type="text"
-                placeholder="새로운 할 일을 입력하세요."
+                placeholder="새로운 할 일을 입력하세요"
                 value={newTodo}
                 onChange={(e) => setNewTodo(e.target.value)}
               />
@@ -158,7 +179,7 @@ function App() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              editTodo(editId, editText);
+              handleEditTodo(editId, editText);
               endEditMode();
             }}
           >
