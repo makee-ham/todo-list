@@ -38,7 +38,7 @@ function App() {
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
-  const [draggingId, setDraggingId] = useState(null);
+  const [draggedIndex, setDraggedIndex] = useState(null);
   const [search, setSearch] = useState("");
   const [filterButtonStatus, setFilterButtonStatus] = useState("all");
 
@@ -47,7 +47,8 @@ function App() {
     async function fetchTodos() {
       try {
         const response = await axios.get("http://localhost:4000/todos"); // 여기서 JSON 객체 파싱까지 해줌
-        dispatch({ type: "SET_TODO", payload: response.data });
+        const sorted = [...response.data].sort((a, b) => a.order - b.order);
+        dispatch({ type: "SET_TODO", payload: sorted });
       } catch (err) {
         console.error(`데이터를 불러오는 데 실패했습니다. ${err}`);
       }
@@ -112,48 +113,41 @@ function App() {
   }, [isEdit]);
 
   // 드래그 관련
-  const handleDragStart = (id) => {
-    setDraggingId(id);
+
+  // 드래그 시작
+  const handleDragStart = (index) => {
+    setDraggedIndex(index);
   };
 
-  const handleDragOver = async (targetId, e) => {
+  // 드래그 오버
+  const handleDragOver = (targetIndex, e) => {
     e.preventDefault();
-
-    if (draggingId === null || draggingId === targetId) return;
+    if (draggedIndex === null || draggedIndex === targetIndex) return;
 
     const newTodos = [...todos];
-    const fromIndex = newTodos.findIndex((todo) => todo.id === draggingId);
-    const toIndex = newTodos.findIndex((todo) => todo.id === targetId);
-    const draggingItem = newTodos[fromIndex];
+    const [moved] = newTodos.splice(draggedIndex, 1);
+    newTodos.splice(targetIndex, 0, moved);
 
-    newTodos.splice(fromIndex, 1);
-    newTodos.splice(toIndex, 0, draggingItem);
+    // 바로 UI 반영
+    dispatch({ type: "REORDER_TODO", payload: newTodos });
+    setDraggedIndex(targetIndex);
 
-    // order 값 재정렬
-    const updatedTodos = newTodos.map((todo, index) => ({
-      ...todo,
-      order: index,
-    }));
-
-    // ^ 위에서 order값 재정렬한 걸 db에 반영!
-    try {
-      // Promise.all로 모든 todo.id마다 axios.patch() 보내기 -- 전체 목록 order 바뀐 것 비동기 업데이트
-      await Promise.all(
-        updatedTodos.map((todo) =>
-          axios.patch(`http://localhost:4000/todos/${todo.id}`, {
-            order: todo.order,
-          })
-        )
-      );
-      // todos 상태 갱신
-      dispatch({ type: "REORDER_TODO", payload: updatedTodos });
-      setDraggingId(targetId); // 드래그 중 마우스가 어떤 요소 위에 있는지를 추적
-    } catch (err) {
-      console.error("항목 순서 변경에 실패했습니다.", err);
-    }
+    // 바로 서버에 order 업데이트
+    newTodos.forEach(async (todo, idx) => {
+      try {
+        await axios.patch(`http://localhost:4000/todos/${todo.id}`, {
+          order: idx,
+        });
+      } catch (err) {
+        console.error("서버에 순서 업데이트 실패", err);
+      }
+    });
   };
 
-  const handleDrop = () => setDraggingId(null);
+  // 드래그 종료
+  const handleDrop = () => {
+    setDraggedIndex(null);
+  };
 
   // 할 일 완료 여부 관련
   const handleDoneTodo = async (id) => {
@@ -183,6 +177,7 @@ function App() {
   // 버튼+검색 필터
   const filterTodos = (todoList) => {
     return todoList
+      .sort((a, b) => a.order - b.order)
       .filter((todo) => {
         // 완료 여부 버튼 필터
         if (filterButtonStatus === "uncompleted") return !todo.completed;
@@ -234,12 +229,13 @@ function App() {
               </div>
             </div>
             <ul id="todo-list">
-              {filterTodos(todos).map((todo) => (
+              {filterTodos(todos).map((todo, index) => (
                 <li
                   key={todo.id}
                   draggable={false}
-                  onDragEnter={(e) => handleDragOver(todo.id, e)}
-                  onDrop={{ handleDrop }}
+                  onDragStart={() => handleDragStart(index)}
+                  onDragOver={(e) => handleDragOver(index, e)}
+                  onDrop={handleDrop}
                 >
                   <input
                     type="checkbox"
@@ -255,7 +251,8 @@ function App() {
                   </button>
                   <button
                     draggable
-                    onDragStart={() => handleDragStart(todo.id)}
+                    onDragStart={() => handleDragStart(todo.id, index)}
+                    style={{ cursor: "pointer" }}
                   >
                     ⋮
                   </button>
