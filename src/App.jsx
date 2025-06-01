@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useState } from "react";
 import Functions from "./components/Functions";
 import { getRegExp } from "korean-regexp";
+import useFetch from "./hooks/useFetch";
 
 const todoReducer = (state, action) => {
   switch (action.type) {
@@ -138,6 +139,15 @@ function App() {
       });
   };
 
+  // 랜덤 명언
+  const {
+    data: quoteData,
+    loading: quoteLoading,
+    error: quoteError,
+  } = useFetch("https://dummyjson.com/quotes/random");
+
+  console.log(quoteData);
+
   return (
     <>
       <div id="app-container">
@@ -215,7 +225,17 @@ function App() {
             </form>
           </section>
         </main>
-        <footer>{/* for random quotes */}</footer>
+        <footer>
+          {quoteError ? (
+            <p>랜덤 명언을 가져오는 데 실패했습니다. : {quoteError}</p>
+          ) : quoteLoading || !quoteData ? (
+            <p>랜덤 명언을 불러오는 중입니다...</p>
+          ) : (
+            <p>
+              "{quoteData.quote}"<span>— {quoteData.author}</span>
+            </p>
+          )}
+        </footer>
       </div>
       {/* 수정 버튼 클릭 시 나타나는 모달 팝업 */}
       <div id="edit-modal" className={`${isEdit ? "block" : "hidden"}`}>
