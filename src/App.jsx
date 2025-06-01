@@ -2,19 +2,14 @@ import { useEffect, useReducer, useState } from "react";
 import Functions from "./components/Functions";
 import { getRegExp } from "korean-regexp";
 import useFetch from "./hooks/useFetch";
+import axios from "axios";
 
 const todoReducer = (state, action) => {
   switch (action.type) {
+    case "SET_TODO":
+      return action.payload;
     case "ADD_TODO":
-      return [
-        ...state,
-        {
-          id: Date.now(),
-          text: action.payload,
-          completed: false,
-          order: state.length,
-        },
-      ];
+      return [...state, action.payload]; // id는 서버가 id 자동 생성 및 추가
     case "EDIT_TODO":
       return state.map((todo) =>
         todo.id === action.payload.id
@@ -43,26 +38,53 @@ function App() {
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
-  const [draggingIndex, setDraggingIndex] = useState(null);
+  const [draggingId, setDraggingId] = useState(null);
   const [search, setSearch] = useState("");
   const [filterButtonStatus, setFilterButtonStatus] = useState("all");
 
+  // 최초 마운트 때 db 불러오기 (SET_TODO)
+  useEffect(() => {
+    async function fetchTodos() {
+      try {
+        const response = await axios.get("http://localhost:4000/todos"); // 여기서 JSON 객체 파싱까지 해줌
+        dispatch({ type: "SET_TODO", payload: response.data });
+      } catch (err) {
+        console.error(`데이터를 불러오는 데 실패했습니다. ${err}`);
+      }
+    }
+
+    fetchTodos();
+  }, []);
+
   // 추가 관련
-  const handleAddTodo = (text) => {
+  const handleAddTodo = async (text) => {
     if (text.trim() === "") {
       alert("할 일 내용을 입력 후 추가해 주세요.");
       return;
     }
-    dispatch({ type: "ADD_TODO", payload: text });
+
+    try {
+      const newTodo = { text, completed: false, order: todos.length };
+      const response = await axios.post("http://localhost:4000/todos", newTodo); // todos 배열에 newTodo 객체 추가
+      dispatch({ type: "ADD_TODO", payload: response.data });
+    } catch (err) {
+      console.error("항목 추가에 실패했습니다.", err);
+    }
   };
 
   // 수정 관련
-  const handleEditTodo = (id, text) => {
+  const handleEditTodo = async (id, text) => {
     if (text.trim() === "") {
       alert("할 일 내용을 입력 후 수정해 주세요.");
       return;
     }
-    dispatch({ type: "EDIT_TODO", payload: { id: id, text: text } });
+
+    try {
+      await axios.post(`http://localhost:4000/todos/${id}`, { text }); // text: text 축약
+      dispatch({ type: "EDIT_TODO", payload: { id, text } });
+    } catch (err) {
+      console.error("항목 수정에 실패했습니다.", err);
+    }
   };
 
   const startEditMode = (id, text) => {
@@ -91,36 +113,71 @@ function App() {
 
   // 드래그 관련
   const handleDragStart = (id) => {
-    const index = todos.findIndex((todo) => todo.id === id);
-    setDraggingIndex(index);
+    setDraggingId(id);
   };
 
-  const handleDragOver = (targetId, e) => {
+  const handleDragOver = async (targetId, e) => {
     e.preventDefault();
 
-    const targetIndex = todos.findIndex((todo) => todo.id === targetId);
-    if (draggingIndex === null || draggingIndex === targetIndex) return; // index 제자리 거르기
+    if (draggingId === null || draggingId === targetId) return;
 
     const newTodos = [...todos];
-    const draggingItem = newTodos[draggingIndex];
+    const fromIndex = newTodos.findIndex((todo) => todo.id === draggingId);
+    const toIndex = newTodos.findIndex((todo) => todo.id === targetId);
+    const draggingItem = newTodos[fromIndex];
 
-    newTodos.splice(draggingIndex, 1);
-    newTodos.splice(targetIndex, 0, draggingItem);
+    newTodos.splice(fromIndex, 1);
+    newTodos.splice(toIndex, 0, draggingItem);
 
-    dispatch({ type: "REORDER_TODO", payload: newTodos });
-    setDraggingIndex(targetIndex);
+    // order 값 재정렬
+    const updatedTodos = newTodos.map((todo, index) => ({
+      ...todo,
+      order: index,
+    }));
+
+    // ^ 위에서 order값 재정렬한 걸 db에 반영!
+    try {
+      // Promise.all로 모든 todo.id마다 axios.patch() 보내기 -- 전체 목록 order 바뀐 것 비동기 업데이트
+      await Promise.all(
+        updatedTodos.map((todo) =>
+          axios.patch(`http://localhost:4000/todos/${todo.id}`, {
+            order: todo.order,
+          })
+        )
+      );
+      // todos 상태 갱신
+      dispatch({ type: "REORDER_TODO", payload: updatedTodos });
+      setDraggingId(targetId); // 드래그 중 마우스가 어떤 요소 위에 있는지를 추적
+    } catch (err) {
+      console.error("항목 순서 변경에 실패했습니다.", err);
+    }
   };
 
-  const handleDrop = () => setDraggingIndex(null);
+  const handleDrop = () => setDraggingId(null);
 
   // 할 일 완료 여부 관련
-  const handleDoneTodo = (id) => {
-    dispatch({ type: "DONE_TODO", payload: id });
+  const handleDoneTodo = async (id) => {
+    const targetTodo = todos.find((todo) => todo.id === id);
+    if (!targetTodo) return;
+
+    try {
+      await axios.patch(`http://localhost:4000/todos/${id}`, {
+        completed: !targetTodo.completed,
+      });
+      dispatch({ type: "DONE_TODO", payload: id });
+    } catch (err) {
+      console.error("항목 완료 상태 변경에 실패했습니다.", err);
+    }
   };
 
   // 삭제 관련
-  const handleDeleteTodo = (id) => {
-    dispatch({ type: "DELETE_TODO", payload: id });
+  const handleDeleteTodo = async (id) => {
+    try {
+      await axios.delete(`http://localhost:4000/todos/${id}`);
+      dispatch({ type: "DELETE_TODO", payload: id });
+    } catch (err) {
+      console.error("항목 삭제에 실패했습니다.", err);
+    }
   };
 
   // 버튼+검색 필터
