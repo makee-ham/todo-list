@@ -4,7 +4,7 @@ export default function useFetch(url) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const fetchedRef = useRef(false); // 리렌더링 관계 없이 한 번만 페치되도록
+  const fetchedRef = useRef(false); // 리렌더링 관계 없이 한 번만 페치되도록.. (왜 안 되지)
 
   useEffect(() => {
     if (!url) return; // url 없을 때 동작 방지

@@ -1,14 +1,10 @@
-import { useState } from "react";
+import { memo } from "react";
 import Timer from "./Timer";
 import Stopwatch from "./Stopwatch";
 import Clock from "./Clock";
 import Weather from "./Weather";
 
-export default function Functions() {
-  const [activeTab, setActiveTab] = useState("clock");
-
-  const handleTabClick = (tabId) => setActiveTab(tabId);
-
+export default memo(function Functions({ activeTab, setActiveTab }) {
   const functionTabs = [
     { id: "clock", label: "현재 시각" },
     { id: "timer", label: "타이머" },
@@ -18,13 +14,13 @@ export default function Functions() {
 
   return (
     <section id="functions-container">
-      <div id="function-tabs">
+      <div id="function-tabs" className="flex justify-around mb-4">
         {functionTabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
-            className={`${activeTab === tab.id ? "active" : ""}`}
-            onClick={() => handleTabClick(tab.id)}
+            className={`px-3 py-1 rounded ${activeTab === tab.id ? "bg-blue-500 text-white" : "bg-white border"}`}
+            onClick={() => setActiveTab(tab.id)}
           >
             {tab.label}
           </button>
@@ -46,4 +42,4 @@ export default function Functions() {
       </div>
     </section>
   );
-}
+});

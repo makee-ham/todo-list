@@ -23,9 +23,9 @@ export default function Clock() {
   const [hour, minute, second] = time.split(":");
 
   return (
-    <div id="clock-container">
+    <div id="clock-container" className="text-center text-lg">
       <span>현재 시각 : </span>
-      <span>
+      <span className="font-mono">
         {hour}시 {minute}분 {second}초
       </span>
     </div>

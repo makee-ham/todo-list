@@ -1,16 +1,40 @@
 {
   "todos": [
     {
-      "id": "16cf",
-      "text": "ㅁㄴㅇㅁㄴㅇㄴㅁㅇㅁ",
+      "id": "1f6b",
+      "text": "안녕하세요",
+      "completed": false,
+      "order": 0
+    },
+    {
+      "id": "63cb",
+      "text": "일단 대충만 스타일링 해놨는데",
       "completed": false,
       "order": 1
     },
     {
-      "id": "6f05",
-      "text": "ㅁㄴㅇㅁㄴㅇㄴㅁㅇㄴㅁ",
+      "id": "be5f",
+      "text": "자꾸 리렌더링 되고 새로고침 돼서",
       "completed": false,
-      "order": 0
+      "order": 2
+    },
+    {
+      "id": "6a21",
+      "text": "투두 위에 Functions나 아래 FooterQuote는 투두 기능과 관계 없이",
+      "completed": false,
+      "order": 3
+    },
+    {
+      "id": "7fb6",
+      "text": "리렌더링 안 되고 유지 됐으면 좋겠는데",
+      "completed": false,
+      "order": 4
+    },
+    {
+      "id": "2448",
+      "text": "어떻게 해야할지 모르겠어요...",
+      "completed": false,
+      "order": 5
     }
   ]
 }

@@ -38,11 +38,13 @@ export default function Stopwatch() {
   return (
     <div id="stopwatch-container">
       <div id="stopwatch-display">{formatTime(displayTime)}</div>
-      <div id="stopwatch-buttons">
-        <button onClick={toggleStart}>
+      <div className="flex gap-2 mt-2">
+        <button onClick={toggleStart} className="px-3 py-1 border rounded">
           {isStartRef.current ? "정지" : "시작"}
         </button>
-        <button onClick={reset}>초기화</button>
+        <button onClick={reset} className="px-3 py-1 border rounded">
+          초기화
+        </button>
       </div>
     </div>
   );
