@@ -7,7 +7,12 @@ const todoReducer = (state, action) => {
     case "ADD_TODO":
       return [
         ...state,
-        { id: Date.now(), text: action.payload, completed: false },
+        {
+          id: Date.now(),
+          index: state.length,
+          text: action.payload,
+          completed: false,
+        },
       ];
     case "EDIT_TODO":
       return state.map((todo) =>
@@ -15,6 +20,9 @@ const todoReducer = (state, action) => {
           ? { ...todo, text: action.payload.text }
           : todo
       );
+    case "REORDER_TODO":
+      // 보이는 대로 todos 순서 변경 + index 값도 객체 내 저장
+      return action.payload.map((todo, index) => ({ ...todo, index: index }));
     case "DONE_TODO":
       return state.map((todo) =>
         todo.id === action.payload
@@ -34,6 +42,7 @@ function App() {
   const [isEdit, setIsEdit] = useState(false);
   const [editId, setEditId] = useState(null);
   const [editText, setEditText] = useState("");
+  const [draggingIndex, setDraggingIndex] = useState(null);
   const [search, setSearch] = useState("");
   const [filterButtonStatus, setFilterButtonStatus] = useState("all");
 
@@ -79,6 +88,25 @@ function App() {
     return () => window.removeEventListener("keydown", escapeModalOff);
   }, [isEdit]);
 
+  // 드래그 관련
+  const handleDragStart = (index) => setDraggingIndex(index);
+
+  const handleDragOver = (index, e) => {
+    e.preventDefault();
+    if (draggingIndex === null || draggingIndex === index) return; // index 제자리 거르기
+
+    const newTodos = [...todos];
+    const draggingItem = newTodos[draggingIndex];
+
+    newTodos.splice(draggingIndex, 1);
+    newTodos.splice(index, 0, draggingItem);
+
+    dispatch({ type: "REORDER_TODO", payload: newTodos });
+    setDraggingIndex(index);
+  };
+
+  const handleDrop = () => setDraggingIndex(null);
+
   // 할 일 완료 여부 관련
   const handleDoneTodo = (id) => {
     dispatch({ type: "DONE_TODO", payload: id });
@@ -90,18 +118,20 @@ function App() {
   };
 
   // 버튼+검색 필터
-  const filteredTodos = todos
-    .filter((todo) => {
-      // 완료 여부 버튼 필터
-      if (filterButtonStatus === "uncompleted") return !todo.completed;
-      if (filterButtonStatus === "completed") return todo.completed;
-      return true;
-      // 투두 검색 필터
-    })
-    .filter((todo) => {
-      const searchedValue = getRegExp(search);
-      return todo.text.match(searchedValue);
-    });
+  const filterTodos = (todoList) => {
+    return todoList
+      .filter((todo) => {
+        // 완료 여부 버튼 필터
+        if (filterButtonStatus === "uncompleted") return !todo.completed;
+        if (filterButtonStatus === "completed") return todo.completed;
+        return true;
+        // 투두 검색 필터
+      })
+      .filter((todo) => {
+        const searchedValue = getRegExp(search);
+        return todo.text.match(searchedValue);
+      });
+  };
 
   return (
     <>
@@ -134,8 +164,13 @@ function App() {
               </div>
             </div>
             <ul id="todo-list">
-              {filteredTodos.map((todo) => (
-                <li key={todo.id}>
+              {filterTodos(todos).map((todo, index) => (
+                <li
+                  key={todo.id}
+                  draggable={false}
+                  onDragEnter={(e) => handleDragOver(index, e)}
+                  onDrop={{ handleDrop }}
+                >
                   <input
                     type="checkbox"
                     checked={todo.completed}
@@ -147,6 +182,9 @@ function App() {
                   </button>
                   <button onClick={() => handleDeleteTodo(todo.id)}>
                     삭제
+                  </button>
+                  <button draggable onDragStart={() => handleDragStart(index)}>
+                    ⋮
                   </button>
                 </li>
               ))}
