@@ -9,9 +9,9 @@ const todoReducer = (state, action) => {
         ...state,
         {
           id: Date.now(),
-          index: state.length,
           text: action.payload,
           completed: false,
+          order: state.length,
         },
       ];
     case "EDIT_TODO":
@@ -21,8 +21,8 @@ const todoReducer = (state, action) => {
           : todo
       );
     case "REORDER_TODO":
-      // 보이는 대로 todos 순서 변경 + index 값도 객체 내 저장
-      return action.payload.map((todo, index) => ({ ...todo, index: index }));
+      // 필터링되어서 보이는 것만 조작하더라도, 여기랑 핸들러에서 전체 todos 기준으로 업데이트 하기에 괜찮다
+      return action.payload.map((todo, index) => ({ ...todo, order: index }));
     case "DONE_TODO":
       return state.map((todo) =>
         todo.id === action.payload
@@ -89,20 +89,25 @@ function App() {
   }, [isEdit]);
 
   // 드래그 관련
-  const handleDragStart = (index) => setDraggingIndex(index);
+  const handleDragStart = (id) => {
+    const index = todos.findIndex((todo) => todo.id === id);
+    setDraggingIndex(index);
+  };
 
-  const handleDragOver = (index, e) => {
+  const handleDragOver = (targetId, e) => {
     e.preventDefault();
-    if (draggingIndex === null || draggingIndex === index) return; // index 제자리 거르기
+
+    const targetIndex = todos.findIndex((todo) => todo.id === targetId);
+    if (draggingIndex === null || draggingIndex === targetIndex) return; // index 제자리 거르기
 
     const newTodos = [...todos];
     const draggingItem = newTodos[draggingIndex];
 
     newTodos.splice(draggingIndex, 1);
-    newTodos.splice(index, 0, draggingItem);
+    newTodos.splice(targetIndex, 0, draggingItem);
 
     dispatch({ type: "REORDER_TODO", payload: newTodos });
-    setDraggingIndex(index);
+    setDraggingIndex(targetIndex);
   };
 
   const handleDrop = () => setDraggingIndex(null);
@@ -164,11 +169,11 @@ function App() {
               </div>
             </div>
             <ul id="todo-list">
-              {filterTodos(todos).map((todo, index) => (
+              {filterTodos(todos).map((todo) => (
                 <li
                   key={todo.id}
                   draggable={false}
-                  onDragEnter={(e) => handleDragOver(index, e)}
+                  onDragEnter={(e) => handleDragOver(todo.id, e)}
                   onDrop={{ handleDrop }}
                 >
                   <input
@@ -183,7 +188,10 @@ function App() {
                   <button onClick={() => handleDeleteTodo(todo.id)}>
                     삭제
                   </button>
-                  <button draggable onDragStart={() => handleDragStart(index)}>
+                  <button
+                    draggable
+                    onDragStart={() => handleDragStart(todo.id)}
+                  >
                     ⋮
                   </button>
                 </li>
