@@ -146,8 +146,6 @@ function App() {
     error: quoteError,
   } = useFetch("https://dummyjson.com/quotes/random");
 
-  console.log(quoteData);
-
   return (
     <>
       <div id="app-container">
