@@ -1,10 +1,12 @@
-import { memo } from "react";
+import { memo, useState } from "react";
 import Timer from "./Timer";
 import Stopwatch from "./Stopwatch";
 import Clock from "./Clock";
 import Weather from "./Weather";
 
-export default memo(function Functions({ activeTab, setActiveTab }) {
+export default memo(function Functions() {
+  const [activeTab, setActiveTab] = useState("clock");
+
   const functionTabs = [
     { id: "clock", label: "현재 시각" },
     { id: "timer", label: "타이머" },

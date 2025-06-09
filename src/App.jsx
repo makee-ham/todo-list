@@ -3,22 +3,8 @@
 import Functions from "./components/Functions";
 import FooterQuote from "./components/FooterQuote";
 import TodoSection from "./components/TodoSection";
-import { useState, useEffect } from "react";
-import axios from "axios";
 
 function App() {
-  const [activeTab, setActiveTab] = useState("clock");
-
-  const [quote, setQuote] = useState(null);
-
-  useEffect(() => {
-    async function fetchQuote() {
-      const response = await axios.get("https://dummyjson.com/quotes/random");
-      setQuote(response.data);
-    }
-    fetchQuote();
-  }, []);
-
   return (
     <div
       id="app-container"
@@ -28,10 +14,10 @@ function App() {
         <h1 className="text-2xl font-bold">Things Todo</h1>
       </header>
       <main className="w-full max-w-xl space-y-4">
-        <Functions activeTab={activeTab} setActiveTab={setActiveTab} />
+        <Functions />
         <TodoSection />
       </main>
-      <FooterQuote quote={quote} />
+      <FooterQuote />
     </div>
   );
 }
